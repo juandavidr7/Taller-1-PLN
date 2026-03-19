@@ -1,0 +1,475 @@
+\documentclass[12pt, a4paper]{article}
+
+% ── Paquetes ──────────────────────────────────────────────────────────────────
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath, amssymb}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{float}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{enumitem}
+
+\geometry{
+    top=2.5cm, bottom=2.5cm,
+    left=2.5cm, right=2.5cm
+}
+
+% ── Estilo de código Python ───────────────────────────────────────────────────
+\definecolor{codegreen}{rgb}{0.1,0.5,0.1}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.5,0,0.5}
+\definecolor{backcolor}{rgb}{0.97,0.97,0.97}
+\definecolor{keyblue}{rgb}{0.0,0.3,0.7}
+
+\lstdefinestyle{python}{
+    backgroundcolor=\color{backcolor},
+    commentstyle=\color{codegreen}\itshape,
+    keywordstyle=\color{keyblue}\bfseries,
+    stringstyle=\color{codepurple},
+    numberstyle=\tiny\color{codegray},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=6pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2,
+    frame=single,
+    rulecolor=\color{gray!40},
+    language=Python
+}
+
+\lstset{style=python}
+
+% ── Encabezado y pie de página ────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{POS Tagging — BiLSTM / BiLSTM-Deep / BiLSTM-CRF}
+\lhead{Universidad del Valle}
+\rfoot{\thepage}
+
+% ── Hipervínculos ─────────────────────────────────────────────────────────────
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    urlcolor=blue!70!black,
+    citecolor=blue!70!black
+}
+
+% =============================================================================
+\begin{document}
+
+% ── Portada ───────────────────────────────────────────────────────────────────
+\begin{titlepage}
+    \centering
+
+    % ── ESPACIO PARA EL ESCUDO DE UNIVALLE ────────────────────────────────────
+    % Reemplaza 'escudo_univalle.png' por la ruta real de tu imagen
+    \includegraphics[width=0.25\textwidth]{univalle.jpg}\\[1.5cm]
+    % ─────────────────────────────────────────────────────────────────────────
+
+    {\Large \textbf{Universidad del Valle}\\[0.2cm]
+    \large Escuela de Ingeniería de Sistemas y Computación\\[0.1cm]
+    Procesamiento de Lenguaje Natural}\\[1.5cm]
+
+    \rule{\linewidth}{0.5pt}\\[0.4cm]
+    {\LARGE \bfseries Taller 1: Etiquetado Secuencial para POS Tagging en Español}\\[0.3cm]
+    {\large Comparativa de Arquitecturas BiLSTM, BiLSTM-Deep y BiLSTM-CRF}\\[0.2cm]
+    \rule{\linewidth}{0.5pt}\\[2cm]
+
+    {\large \textbf{Autores:}}\\[0.4cm]
+    \begin{tabular}{c}
+        Elkin Tovar \\[0.15cm]
+        Juan David Rincón \\[0.15cm]
+        Juan David Jaramillo \\[0.15cm]
+        Andrés Asprilla \\
+    \end{tabular}\\[2cm]
+
+    {\large Cali, Colombia\\[0.1cm]
+    \today}
+\end{titlepage}
+
+% ── Tabla de contenidos ───────────────────────────────────────────────────────
+\tableofcontents
+\newpage
+
+% =============================================================================
+\section{Introducción}
+% =============================================================================
+
+El etiquetado gramatical (\textit{Part-of-Speech Tagging}, POS Tagging) es una tarea
+fundamental en el procesamiento de lenguaje natural (PLN) que consiste en asignar
+a cada token de una oración su categoría morfológica correspondiente, por ejemplo,
+sustantivo, verbo, adjetivo o determinante. Formalmente, dado un vocabulario de
+palabras y un conjunto finito de etiquetas gramaticales, el objetivo es encontrar la
+secuencia de etiquetas $\hat{Y}$ que maximice la probabilidad condicional:
+
+\begin{equation}
+    \hat{Y} = \underset{Y}{\mathrm{argmax}}\; P(Y \mid X,\, \theta)
+\end{equation}
+
+\noindent donde $X = (x_1, x_2, \ldots, x_T)$ es la secuencia de entrada y
+$\theta$ representa los parámetros aprendidos por el modelo.
+
+En este taller se implementan y comparan tres arquitecturas de aprendizaje profundo
+diseñadas para la tarea de POS Tagging en español: la \textbf{BiLSTM base},
+la \textbf{BiLSTM-Deep} y la \textbf{BiLSTM-CRF}. Para ello se emplean dos
+corpus de referencia, \textit{Ancora} y \textit{CoNLL2002}, utilizando el
+\textit{framework} PyTorch. A lo largo del informe se describe el proceso de
+preprocesamiento de los datos, la arquitectura de cada modelo, el diseño
+experimental con búsqueda de hiperparámetros, y los resultados obtenidos. El
+análisis comparativo busca evidenciar el impacto de añadir capas densas
+intermedias y la capa CRF en el desempeño del etiquetador.
+
+% =============================================================================
+\section{Marco Teórico}
+% =============================================================================
+
+\subsection{Redes LSTM Bidireccionales (BiLSTM)}
+
+Las redes de memoria a largo y corto plazo (\textit{Long Short-Term Memory},
+LSTM) son un tipo de red neuronal recurrente diseñada para capturar dependencias
+a largo plazo en secuencias. Una BiLSTM procesa la secuencia en ambas
+direcciones —de izquierda a derecha y de derecha a izquierda— concatenando las
+representaciones ocultas de ambas direcciones, lo que permite capturar contexto
+tanto previo como posterior a cada token.
+
+% Puedes ampliar aquí con las ecuaciones de la celda LSTM si lo requieres.
+
+\subsection{Campos Aleatorios Condicionales (CRF)}
+
+Los Conditional Random Fields (CRF) son modelos probabilísticos discriminativos
+diseñados para tareas de etiquetado estructurado donde las salidas forman una
+secuencia depediente. A diferencia de los Hidden Markov Models (HMM),
+los CRF modelan directamente la probabilidad condicional $P(Y \mid X)$:
+
+\begin{equation}
+    P(Y \mid X) = \frac{1}{Z(X)} \exp\!\left(\sum_{k} \lambda_k F_k(Y, X)\right)
+\end{equation}
+
+\noindent donde $F_k(Y,X)$ son funciones de características, $\lambda_k$ son los
+parámetros aprendidos, y $Z(X)$ es la función de partición que garantiza que la
+distribución sea válida:
+
+\begin{equation}
+    Z(X) = \sum_{Y'} \exp\!\left(\sum_{k} \lambda_k F_k(Y', X)\right)
+\end{equation}
+
+Al combinar la BiLSTM con una capa CRF, el modelo puede modelar transiciones
+globalmente coherentes entre etiquetas, lo cual resulta especialmente útil en
+español dada el contexto morfológico del idioma.
+
+\subsection{Arquitecturas a comparar}
+
+Las tres arquitecturas evaluadas son:
+
+\begin{enumerate}[leftmargin=*, label=\arabic*.]
+    \item \textbf{BiLSTM Base}: Bidirectional LSTM seguida de una capa lineal de
+          clasificación. Constituye el modelo de referencia.
+    \item \textbf{BiLSTM-Deep}: Extiende el modelo base añadiendo capas densas
+          intermedias con activaciones no lineales entre la BiLSTM y la capa de
+          salida, incrementando la capacidad de representación.
+    \item \textbf{BiLSTM-CRF}: Combina la BiLSTM con una capa CRF para modelar
+          explícitamente las dependencias entre etiquetas consecutivas.
+\end{enumerate}
+
+% =============================================================================
+\section{Conjuntos de datos}
+% =============================================================================
+
+\subsection{Descripción de los corpus}
+
+Se utilizan dos corpus en español:
+
+\begin{itemize}
+    \item \textbf{Ancora}: Treebank sintáctico del español con anotaciones
+          morfológicas y sintácticas. Se proporciona en formato CSV con columnas
+          \texttt{Sentence \#}, \texttt{Word} y \texttt{POS}.
+    \item \textbf{CoNLL2002}: Corpus del \textit{shared task} de CoNLL2002 en
+          español, originalmente orientado a NER pero que incluye columnas de POS.
+          Su formato es texto plano separado por espacios (\texttt{Word POS NER}).
+\end{itemize}
+
+\subsection{Estadísticas descriptivas}
+
+% ── Completa la tabla con los valores reales obtenidos ────────────────────────
+\begin{table}[H]
+    \centering
+    \caption{Comparativa de estadísticas entre los corpus utilizados.}
+    \label{tab:stats}
+    \begin{tabular}{lcc}
+        \toprule
+        \textbf{Métrica}       & \textbf{Ancora} & \textbf{CoNLL2002 Train} \\
+        \midrule
+        Total de tokens        & ---             & ---                      \\
+        Total de oraciones     & ---             & ---                      \\
+        Tags únicos            & ---             & ---                      \\
+        Longitud media (tokens)& ---             & ---                      \\
+        P95 longitud           & ---             & ---                      \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Análisis Exploratorio}
+% =============================================================================
+\section{Preprocesamiento de los Datos}
+% =============================================================================
+
+\subsection{Construcción de oraciones y vocabulario}
+
+El pipeline de preprocesamiento sigue los pasos estándar para garantizar la
+comparabilidad entre experimentos. Las oraciones se construyen agrupando tokens
+por identificador de oración y se truncan a \texttt{MAX\_LEN = 50} tokens. El
+vocabulario se construye contando frecuencias y filtrando palabras con menos de
+\texttt{MIN\_FREQ = 3} apariciones; las palabras fuera de vocabulario se mapean al
+token especial \texttt{<UNK>}.
+
+\end{lstlisting}
+
+\subsection{Vectorización y Padding}
+
+Las secuencias de palabras y etiquetas se convierten a matrices numéricas
+aplicando padding de ceros hasta la longitud máxima definida. Esto permite
+procesarlas en lotes uniformes (\textit{batches}) dentro de PyTorch.
+
+
+\subsection{Partición de los Conjuntos}
+
+Para Ancora se realiza una división aleatoria estratificada en los conjuntos de
+entrenamiento (70\%), validación (15\%) y prueba (15\%). Para CoNLL2002 se
+respetan las particiones oficiales del \textit{shared task}.
+
+% =============================================================================
+\section{Definición de los Modelos}
+% =============================================================================
+
+\subsection{BiLSTM Base}
+
+% ── Describe brevemente la arquitectura y pega el código del modelo ───────────
+El modelo base consiste en una capa de \textit{embedding}, una BiLSTM de una
+sola capa y una capa lineal de clasificación que proyecta las representaciones
+ocultas al espacio de etiquetas.
+
+\subsection{BiLSTM-Deep}
+
+La variante profunda añade una segunda capa LSTM y \textit{dropout} interno para
+regularización, incrementando la capacidad no lineal del modelo entre la LSTM y
+la salida.
+
+\subsection{BiLSTM-CRF}
+
+% ── Describe brevemente el modelo BiLSTM-CRF ─────────────────────────────────
+La arquitectura BiLSTM-CRF reemplaza la capa lineal final por una capa CRF que
+modela las transiciones entre etiquetas. Esto permite que el modelo aprenda
+restricciones globales sobre secuencias válidas de etiquetas POS, mejorando la
+coherencia de las predicciones.
+
+% =============================================================================
+\section{Entrenamiento}
+% =============================================================================
+
+\subsection{Estrategia de Búsqueda de Hiperparámetros}
+
+Se realiza una búsqueda exhaustiva (\textit{grid search}) sobre el siguiente
+espacio de hiperparámetros para garantizar una comparación justa entre modelos:
+
+\begin{table}[H]
+    \centering
+    \caption{Espacio de hiperparámetros explorado.}
+    \label{tab:hyperparams}
+    \begin{tabular}{ll}
+        \toprule
+        \textbf{Hiperparámetro} & \textbf{Valores}                     \\
+        \midrule
+        Batch Size              & 16, 32, 64                           \\
+        Optimizador             & Adam (lr=0.001), SGD (lr=0.01, m=0.9)\\
+        Épocas máximas          & 50                                   \\
+        Early Stopping          & Paciencia = 5                        \\
+        Embedding Dim           & 100, 300                             \\
+        Hidden Dim              & 128, 256                             \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Early Stopping}
+
+Para evitar el sobreajuste se implementó una lógica de \textit{Early Stopping}
+que monitorea la pérdida de validación y detiene el entrenamiento si no mejora
+durante 5 épocas consecutivas, restaurando siempre los pesos del mejor modelo
+observado.
+
+% =============================================================================
+\section{Evaluación y Resultados}
+% =============================================================================
+
+\subsection{Métricas de Desempeño}
+
+Para cada modelo y conjunto de datos se reportan las siguientes métricas sobre
+el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_report}:
+
+\begin{itemize}
+    \item \textbf{Accuracy}: porcentaje de tokens etiquetados correctamente.
+    \item \textbf{Precision, Recall y F1-Score} por etiqueta (\textit{class-wise}).
+    \item \textbf{Macro F1}: promedio no ponderado del F1 de todas las clases.
+    \item \textbf{Weighted F1}: promedio ponderado por el soporte de cada clase.
+\end{itemize}
+
+\subsection{Tabla de Resultados Globales}
+
+% ── Completa la tabla con los valores reales obtenidos ────────────────────────
+\begin{table}[H]
+    \centering
+    \caption{Resultados comparativos sobre los conjuntos de prueba.}
+    \label{tab:results}
+    \begin{tabular}{llcccc}
+        \toprule
+        \textbf{Modelo}  & \textbf{Dataset}  & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \midrule
+        BiLSTM           & Ancora            & ---               & ---                & ---             & ---               \\
+        BiLSTM-Deep      & Ancora            & ---               & ---                & ---             & ---               \\
+        BiLSTM-CRF       & Ancora            & ---               & ---                & ---             & ---               \\
+        \midrule
+        BiLSTM           & CoNLL2002         & ---               & ---                & ---             & ---               \\
+        BiLSTM-Deep      & CoNLL2002         & ---               & ---                & ---             & ---               \\
+        BiLSTM-CRF       & CoNLL2002         & ---               & ---                & ---             & ---               \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Resultados por Etiqueta}
+
+% ── Inserta aquí los classification_report de cada modelo ────────────────────
+% Puedes usar \verbatim o lstlisting para mostrar la salida de sklearn
+
+\subsubsection{BiLSTM — Ancora}
+% \begin{lstlisting}[language={}]
+% Pega aqui el classification_report
+% \end{lstlisting}
+
+\subsubsection{BiLSTM-Deep — Ancora}
+
+\subsubsection{BiLSTM-CRF — Ancora}
+
+\subsubsection{BiLSTM — CoNLL2002}
+
+\subsubsection{BiLSTM-Deep — CoNLL2002}
+
+\subsubsection{BiLSTM-CRF — CoNLL2002}
+
+% =============================================================================
+\section{Análisis Comparativo}
+% =============================================================================
+
+\subsection{Impacto de las Capas Profundas (BiLSTM-Deep)}
+
+% ── Discute aquí si agregar capas densas intermedias mejoró el desempeño ─────
+
+\subsection{Impacto del CRF en Etiquetas Secuenciales}
+
+% ── Discute aquí si la capa CRF ayudó a modelar transiciones entre etiquetas ─
+
+\subsection{Comparativa entre Corpus: Ancora vs.\ CoNLL2002}
+
+% ── Discute las diferencias de desempeño atribuibles a los corpus ─────────────
+
+% =============================================================================
+\section{Función de Inferencia y Pruebas con Oraciones Complejas}
+% =============================================================================
+
+\subsection{Implementación de la Función de Predicción}
+
+Se implementó una función de inferencia que recibe una oración en texto libre y
+retorna las predicciones de los tres modelos entrenados.
+
+\subsection{Oraciones de Prueba con Ambigüedad Léxica}
+
+A continuación se presentan al menos cinco oraciones con ambigüedad léxica
+utilizadas para evaluar cualitativamente los modelos.
+
+\subsubsection{Oración 1: \textit{``El hombre bajo toca el bajo bajo la escalera''}}
+
+Esta oración contiene la palabra \textit{bajo} con tres roles gramaticales
+distintos: adjetivo, sustantivo y preposición, lo que supone un reto importante
+para cualquier etiquetador.
+
+% ── Inserta aquí la tabla de predicciones de los tres modelos ─────────────────
+\begin{table}[H]
+    \centering
+    \caption{Predicciones para \textit{``El hombre bajo toca el bajo bajo la escalera''}.}
+    \label{tab:inf1}
+    \begin{tabular}{lccccccccc}
+        \toprule
+        \textbf{Token}   & El  & hombre & bajo & toca & el  & bajo & bajo & la  & escalera \\
+        \midrule
+        \textbf{Gold}    & DET & NOUN   & ADJ  & VERB & DET & NOUN & ADP  & DET & NOUN     \\
+        \textbf{BiLSTM}  & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
+        \textbf{B-Deep}  & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
+        \textbf{B-CRF}   & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsubsection{Oración 2}
+% ── Agrega las oraciones 2 a 5 ───────────────────────────────────────────────
+
+\subsubsection{Oración 3}
+
+\subsubsection{Oración 4}
+
+\subsubsection{Oración 5}
+
+% =============================================================================
+\section{Conclusiones}
+% =============================================================================
+
+% ── Sintetiza los principales hallazgos del taller ────────────────────────────
+
+En este taller se implementaron y compararon tres arquitecturas de aprendizaje
+profundo para POS Tagging en español. A partir de los resultados obtenidos
+pueden extraerse las siguientes conclusiones:
+
+\begin{enumerate}
+    \item \textbf{[Conclusión sobre BiLSTM base]:} ...
+    \item \textbf{[Impacto de la profundidad]:} ...
+    \item \textbf{[Impacto del CRF]:} ...
+    \item \textbf{[Diferencias entre corpus]:} ...
+\end{enumerate}
+
+% =============================================================================
+\section*{Referencias}
+\addcontentsline{toc}{section}{Referencias}
+% =============================================================================
+
+\begin{enumerate}[leftmargin=*, label={[\arabic*]}]
+    \item Lafferty, J., McCallum, A., \& Pereira, F. (2001). Conditional Random Fields:
+          Probabilistic Models for Segmenting and Labeling Sequence Data.
+          \textit{ICML 2001}.
+    \item Hochreiter, S., \& Schmidhuber, J. (1997). Long Short-Term Memory.
+          \textit{Neural Computation}, 9(8), 1735--1780.
+    \item Recasens, M., \& Martí, M. A. (2010). AnCora-CO: Coreferentially
+          Annotated Corpora for Spanish and Catalan. \textit{Language Resources
+          and Evaluation}, 44(4), 315--345.
+    \item Tjong Kim Sang, E. F. (2002). Introduction to the CoNLL-2002 Shared Task:
+          Language-Independent Named Entity Recognition. \textit{CoNLL 2002}.
+    \item PyTorch. \url{https://pytorch.org/}
+    \item pytorch-crf. \url{https://github.com/kmkurn/pytorch-crf}
+    \item scikit-learn. \url{https://scikit-learn.org/}
+\end{enumerate}
+
+\end{document}
