@@ -20,6 +20,8 @@
 \usepackage{titlesec}
 \usepackage{fancyhdr}
 \usepackage{enumitem}
+\usepackage{needspace}
+\usepackage{subcaption}
 
 \geometry{
     top=2.5cm, bottom=2.5cm,
@@ -339,15 +341,15 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
     \label{tab:results}
     \begin{tabular}{llcccc}
         \toprule
-        \textbf{Modelo}  & \textbf{Dataset}  & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \textbf{Modelo}  & \textbf{Dataset}  & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Weighted F1} \\
         \midrule
-        BiLSTM           & Ancora            & ---               & ---                & ---             & ---               \\
-        BiLSTM-Deep      & Ancora            & ---               & ---                & ---             & ---               \\
-        BiLSTM-CRF       & Ancora            & ---               & ---                & ---             & ---               \\
+        BiLSTM           & Ancora            & 0.96               & 0.92                & 0.96              \\
+        BiLSTM-Deep      & Ancora            & ---               & ---                & ---               \\
+        BiLSTM-CRF       & Ancora            & ---               & ---                & ---               \\
         \midrule
-        BiLSTM           & CoNLL2002         & ---               & ---                & ---             & ---               \\
-        BiLSTM-Deep      & CoNLL2002         & ---               & ---                & ---             & ---               \\
-        BiLSTM-CRF       & CoNLL2002         & ---               & ---                & ---             & ---               \\
+        BiLSTM           & CoNLL2002         & 0.94               & 0.91               & 0.94               \\
+        BiLSTM-Deep      & CoNLL2002         & ---               & ---                & ---               \\
+        BiLSTM-CRF       & CoNLL2002         & ---               & ---                & ---               \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -358,15 +360,14 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
 % Puedes usar \verbatim o lstlisting para mostrar la salida de sklearn
 
 \subsubsection{BiLSTM — Ancora}
-% \begin{lstlisting}[language={}]
-% Pega aqui el classification_report
-% \end{lstlisting}
+\input{tables/BiLSTM_ancora.tex}
 
 \subsubsection{BiLSTM-Deep — Ancora}
 
 \subsubsection{BiLSTM-CRF — Ancora}
 
 \subsubsection{BiLSTM — CoNLL2002}
+\input{tables/BiLSTM_conll.tex}
 
 \subsubsection{BiLSTM-Deep — CoNLL2002}
 
