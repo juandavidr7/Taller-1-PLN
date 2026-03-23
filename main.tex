@@ -20,6 +20,8 @@
 \usepackage{titlesec}
 \usepackage{fancyhdr}
 \usepackage{enumitem}
+\usepackage{needspace}
+\usepackage{subcaption}
 
 \geometry{
     top=2.5cm, bottom=2.5cm,
@@ -275,10 +277,7 @@ la salida.
 \subsection{BiLSTM-CRF}
 
 % ── Describe brevemente el modelo BiLSTM-CRF ─────────────────────────────────
-La arquitectura BiLSTM-CRF reemplaza la capa lineal final por una capa CRF que
-modela las transiciones entre etiquetas. Esto permite que el modelo aprenda
-restricciones globales sobre secuencias válidas de etiquetas POS, mejorando la
-coherencia de las predicciones.
+La arquitectura BiLSTM-CRF incorpora a la capa lineal una capa CRF la cual se encarga de modelar las transiciones entre etiquetas. Esto permite que el modelo aprenda restricciones globales sobre secuencias válidas de etiquetas POS, mejorando la coherencia de las predicciones.
 
 % =============================================================================
 \section{Entrenamiento}
@@ -339,15 +338,15 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
     \label{tab:results}
     \begin{tabular}{llcccc}
         \toprule
-        \textbf{Modelo}  & \textbf{Dataset}  & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} \\
+        \textbf{Modelo}  & \textbf{Dataset}  & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Weighted F1} \\
         \midrule
-        BiLSTM           & Ancora            & ---               & ---                & ---             & ---               \\
-        BiLSTM-Deep      & Ancora            & ---               & ---                & ---             & ---               \\
-        BiLSTM-CRF       & Ancora            & ---               & ---                & ---             & ---               \\
+        BiLSTM           & Ancora            & 0.96               & 0.92                & 0.96              \\
+        BiLSTM-Deep      & Ancora            & ---               & ---                & ---               \\
+        BiLSTM-CRF       & Ancora            & 0.97               & 0.93                & 0.97              \\
         \midrule
-        BiLSTM           & CoNLL2002         & ---               & ---                & ---             & ---               \\
-        BiLSTM-Deep      & CoNLL2002         & ---               & ---                & ---             & ---               \\
-        BiLSTM-CRF       & CoNLL2002         & ---               & ---                & ---             & ---               \\
+        BiLSTM           & CoNLL2002         & 0.94               & 0.91               & 0.94               \\
+        BiLSTM-Deep      & CoNLL2002         & ---               & ---                & ---               \\
+        BiLSTM-CRF       & CoNLL2002         & 0.95              & 0.91                & 0.95               \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -358,19 +357,22 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
 % Puedes usar \verbatim o lstlisting para mostrar la salida de sklearn
 
 \subsubsection{BiLSTM — Ancora}
-% \begin{lstlisting}[language={}]
-% Pega aqui el classification_report
-% \end{lstlisting}
+\input{tables/BiLSTM_ancora.tex}
 
 \subsubsection{BiLSTM-Deep — Ancora}
 
 \subsubsection{BiLSTM-CRF — Ancora}
+\input{tables/BiLSTM+CRF(Ancora).tex}
 
 \subsubsection{BiLSTM — CoNLL2002}
+\input{tables/BiLSTM_conll.tex}
 
 \subsubsection{BiLSTM-Deep — CoNLL2002}
 
 \subsubsection{BiLSTM-CRF — CoNLL2002}
+\input{tables/BiLSTM+CRF(CoNLL).tex}
+
+
 
 % =============================================================================
 \section{Análisis Comparativo}
@@ -383,6 +385,13 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
 \subsection{Impacto del CRF en Etiquetas Secuenciales}
 
 % ── Discute aquí si la capa CRF ayudó a modelar transiciones entre etiquetas ─
+La incorporación de una capa de \textit{Conditional Random Fields} (CRF) sobre modelos como BiLSTM permite modelar explícitamente las dependencias entre etiquetas consecutivas, lo cual es fundamental en tareas de etiquetado secuencial como el \textit{Part-of-Speech Tagging}. A diferencia de una clasificación independiente por token, el CRF considera la probabilidad conjunta de una secuencia de etiquetas, capturando restricciones estructurales del lenguaje (por ejemplo, ciertas etiquetas raramente siguen a otras).
+
+En los resultados obtenidos, se observa que el uso de CRF mejora el desempeño en etiquetas con alta dependencia contextual o baja frecuencia. En particular, clases como \texttt{SYM}, \texttt{INTJ} y algunas formas verbales muestran incrementos en el F1-score al utilizar CRF, lo que sugiere que el modelo logra aprovechar mejor la información secuencial para corregir predicciones inconsistentes.
+
+Asimismo, el CRF contribuye a reducir errores de transición poco probables entre etiquetas, generando secuencias más coherentes a nivel lingüístico. Esto es especialmente relevante en datasets como CoNLL y AnCora, donde la estructura gramatical influye directamente en la etiqueta correcta.
+
+En general, los resultados confirman que la combinación BiLSTM+CRF ofrece una mejora respecto a modelos sin CRF, al integrar tanto el contexto bidireccional de las palabras como las dependencias globales entre etiquetas.
 
 \subsection{Comparativa entre Corpus: Ancora vs.\ CoNLL2002}
 
@@ -420,20 +429,124 @@ para cualquier etiquetador.
         \textbf{Gold}    & DET & NOUN   & ADJ  & VERB & DET & NOUN & ADP  & DET & NOUN     \\
         \textbf{BiLSTM}  & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
         \textbf{B-Deep}  & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
-        \textbf{B-CRF}   & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
+        \textbf{B-CRF}   & DET & NOUN    & ADJ  & VERB  & DET & ADP  & ADP  & DET & NOUN      \\
         \bottomrule
     \end{tabular}
 \end{table}
 
-\subsubsection{Oración 2}
+\subsubsection{Oración 2: \textit{``Por favor, deja el sobre con la carta sobre la mesa de madera''}}
+
+En esta frase, la palabra sobre aparece con dos funciones: como un objeto (sustantivo) y como una posición (preposición). El reto para el modelo es distinguir que el primer "sobre" viene después de la palabra "el", lo que indica que es una cosa física, mientras que el segundo relaciona la acción de dejar con un lugar ("la mesa").
+
+\begin{table}[H]
+    \centering
+    \caption{Predicciones detalladas para la Oración 2: \textit{Por favor, deja el sobre con la carta sobre la mesa de madera}.}
+    \label{tab:inf2_vert}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
+        \midrule
+        Por    & ADP  & --- & --- & ADP \\
+        favor  & NOUN & --- & --- & NOUN \\
+        deja   & VERB & --- & --- & VERB\\
+        el     & DET  & --- & --- & DET \\
+        sobre  & NOUN & --- & --- & ADP \\
+        con    & ADP  & --- & --- & ADP \\
+        la     & DET  & --- & --- & DET \\
+        carta  & NOUN & --- & --- & NOUN \\
+        sobre  & ADP  & --- & --- & ADP \\
+        la     & DET  & --- & --- & DET \\
+        mesa   & NOUN & --- & --- & NOUN \\
+        de     & ADP  & --- & --- & ADP \\
+        madera & NOUN & --- & --- & NOUN \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
 % ── Agrega las oraciones 2 a 5 ───────────────────────────────────────────────
 
-\subsubsection{Oración 3}
+\subsubsection{Oración 3 \textit{``Yo traje un traje nuevo para la ceremonia de graduación''}}
 
-\subsubsection{Oración 4}
+Aquí el modelo debe diferenciar entre una acción (verbo traer) y una prenda de vestir (sustantivo). La clave está en el contexto: el primer "traje" acompaña a la persona "Yo", lo que indica que es algo que alguien hizo, mientras que el segundo "traje" tiene la palabra "un" delante, lo que señala que se refiere a la ropa.
 
-\subsubsection{Oración 5}
+\begin{table}[H]
+    \centering
+    \caption{Predicciones detalladas para la Oración 3: \textit{Yo traje un traje nuevo para la ceremonia de graduación}.}
+    \label{tab:inf3_vert}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
+        \midrule
+        Yo         & PRON & --- & --- & PRON \\
+        traje      & VERB & --- & --- & VERB \\
+        un         & DET  & --- & --- & DET \\
+        traje      & NOUN & --- & --- & NOUN \\
+        nuevo      & ADJ  & --- & --- & ADJ \\
+        para       & ADP  & --- & --- & ADP \\
+        la         & DET  & --- & --- & DET \\
+        ceremonia  & NOUN & --- & --- & NOUN \\
+        de         & ADP  & --- & --- & ADP \\
+        graduación & NOUN & --- & --- & PROPN \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 
+\subsubsection{Oración 4 \textit{``Espero que el hombre calle mientras camina por la calle principal''}}
+
+Esta oración usa la palabra calle de dos formas: como el verbo callar y como el lugar por donde se camina. El etiquetador debe procesar que tras las palabras "que el hombre...", lo común es que siga una acción, mientras que al aparecer después de "por la...", se refiere a la vía pública.
+
+\begin{table}[H]
+    \centering
+    \caption{Predicciones detalladas para la Oración 4: \textit{Espero que el hombre calle mientras camina por la calle principal}.}
+    \label{tab:inf4_vert}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
+        \midrule
+        Espero    & VERB & --- & --- & VERB \\
+        que       & CONJ & --- & --- & SCONJ \\
+        el        & DET  & --- & --- & DET \\
+        hombre    & NOUN & --- & --- & NOUN \\
+        calle     & VERB & --- & --- & VERB \\
+        mientras  & ADV  & --- & --- & SCONJ \\
+        camina    & VERB & --- & --- & VERB \\
+        por       & ADP  & --- & --- & ADP \\
+        la        & DET  & --- & --- & DET \\
+        calle     & NOUN & --- & --- & NOUN \\
+        principal & ADJ  & --- & --- & ADJ \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\subsubsection{Oración 5 \textit{``Él puso la cerca muy cerca para que nadie cerca el jardín''}}
+
+Es la oración más difícil porque usa la misma palabra para tres cosas: un objeto (valla), una distancia (adverbio) y una acción (cercar). El análisis depende de notar que la última vez que aparece la palabra viene después de "nadie", lo que gramaticalmente suele requerir que esa palabra funcione como un verbo.
+
+\begin{table}[H]
+    \centering
+    \caption{Predicciones detalladas para la Oración 5: \textit{Él puso la cerca muy cerca para que nadie cerca el jardín}.}
+    \label{tab:inf5_vert}
+    \begin{tabular}{lcccc}
+        \toprule
+        \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
+        \midrule
+        Él     & PRON & --- & --- & PRON \\
+        puso   & VERB & --- & --- & VERB \\
+        la     & DET  & --- & --- & DET \\
+        cerca  & NOUN & --- & --- & ADV \\
+        muy    & ADV  & --- & --- & ADV \\
+        cerca  & ADV  & --- & --- & ADV \\
+        para   & ADP  & --- & --- & ADP \\
+        que    & CONJ & --- & --- & SCONJ \\
+        nadie  & PRON & --- & --- & PRON \\
+        cerca  & VERB & --- & --- & ADV \\
+        el     & DET  & --- & --- & DET \\
+        jardín & NOUN & --- & --- & NOUN \\
+        \bottomrule
+    \end{tabular}
+\end{table}
 % =============================================================================
 \section{Conclusiones}
 % =============================================================================
@@ -447,7 +560,7 @@ pueden extraerse las siguientes conclusiones:
 \begin{enumerate}
     \item \textbf{[Conclusión sobre BiLSTM base]:} ...
     \item \textbf{[Impacto de la profundidad]:} ...
-    \item \textbf{[Impacto del CRF]:} ...
+    \item \textbf{[Impacto del CRF]:} El uso de CRF mejoró el modelado de dependencias entre etiquetas consecutivas, generando secuencias más coherentes y reduciendo errores en transiciones poco probables. Sin embargo, su impacto es limitado en casos de ambigüedad léxica, donde la correcta predicción depende más del significado contextual que de las relaciones entre etiquetas.
     \item \textbf{[Diferencias entre corpus]:} ...
 \end{enumerate}
 
