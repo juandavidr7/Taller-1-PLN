@@ -447,19 +447,19 @@ En esta frase, la palabra sobre aparece con dos funciones: como un objeto (susta
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Por    & ADP  & --- & --- & ADP \\
-        favor  & NOUN & --- & --- & NOUN \\
-        deja   & VERB & --- & --- & VERB\\
-        el     & DET  & --- & --- & DET \\
-        sobre  & NOUN & --- & --- & ADP \\
-        con    & ADP  & --- & --- & ADP \\
-        la     & DET  & --- & --- & DET \\
-        carta  & NOUN & --- & --- & NOUN \\
-        sobre  & ADP  & --- & --- & ADP \\
-        la     & DET  & --- & --- & DET \\
-        mesa   & NOUN & --- & --- & NOUN \\
-        de     & ADP  & --- & --- & ADP \\
-        madera & NOUN & --- & --- & NOUN \\
+        Por    & ADP  & --- & ADP  & ADP \\
+        favor  & NOUN & --- & NOUN & NOUN \\
+        deja   & VERB & --- & VERB & VERB\\
+        el     & DET  & --- & DET  & DET \\
+        sobre  & NOUN & --- & NOUN & ADP \\
+        con    & ADP  & --- & ADP  & ADP \\
+        la     & DET  & --- & DET  & DET \\
+        carta  & NOUN & --- & NOUN & NOUN \\
+        sobre  & ADP  & --- & ADP  & ADP \\
+        la     & DET  & --- & DET  & DET \\
+        mesa   & NOUN & --- & NOUN & NOUN \\
+        de     & ADP  & --- & ADP  & ADP \\
+        madera & NOUN & --- & NOUN & NOUN \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -479,16 +479,16 @@ Aquí el modelo debe diferenciar entre una acción (verbo traer) y una prenda de
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Yo         & PRON & --- & --- & PRON \\
-        traje      & VERB & --- & --- & VERB \\
-        un         & DET  & --- & --- & DET \\
-        traje      & NOUN & --- & --- & NOUN \\
-        nuevo      & ADJ  & --- & --- & ADJ \\
-        para       & ADP  & --- & --- & ADP \\
-        la         & DET  & --- & --- & DET \\
-        ceremonia  & NOUN & --- & --- & NOUN \\
-        de         & ADP  & --- & --- & ADP \\
-        graduación & NOUN & --- & --- & PROPN \\
+        Yo         & PRON & --- & PRON & PRON \\
+        traje      & VERB & --- & VERB & VERB \\
+        un         & DET  & --- & DET  & DET \\
+        traje      & NOUN & --- & NOUN & NOUN \\
+        nuevo      & ADJ  & --- & ADJ  & ADJ \\
+        para       & ADP  & --- & ADP  & ADP \\
+        la         & DET  & --- & DET  & DET \\
+        ceremonia  & NOUN & --- & NOUN & NOUN \\
+        de         & ADP  & --- & ADP  & ADP \\
+        graduación & NOUN & --- & NOUN & PROPN \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -505,17 +505,17 @@ Esta oración usa la palabra calle de dos formas: como el verbo callar y como el
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Espero    & VERB & --- & --- & VERB \\
-        que       & CONJ & --- & --- & SCONJ \\
-        el        & DET  & --- & --- & DET \\
-        hombre    & NOUN & --- & --- & NOUN \\
-        calle     & VERB & --- & --- & VERB \\
-        mientras  & ADV  & --- & --- & SCONJ \\
-        camina    & VERB & --- & --- & VERB \\
-        por       & ADP  & --- & --- & ADP \\
-        la        & DET  & --- & --- & DET \\
-        calle     & NOUN & --- & --- & NOUN \\
-        principal & ADJ  & --- & --- & ADJ \\
+        Espero    & VERB & --- & VERB  & VERB \\
+        que       & CONJ & --- & SCONJ & SCONJ \\
+        el        & DET  & --- & DET   & DET \\
+        hombre    & NOUN & --- & NOUN  & NOUN \\
+        calle     & VERB & --- & ADJ   & VERB \\
+        mientras  & ADV  & --- & SCONJ & SCONJ \\
+        camina    & VERB & --- & VERB  & VERB \\
+        por       & ADP  & --- & ADP   & ADP \\
+        la        & DET  & --- & DET   & DET \\
+        calle     & NOUN & --- & NOUN  & NOUN \\
+        principal & ADJ  & --- & ADJ   & ADJ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -533,18 +533,18 @@ Es la oración más difícil porque usa la misma palabra para tres cosas: un obj
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Él     & PRON & --- & --- & PRON \\
-        puso   & VERB & --- & --- & VERB \\
-        la     & DET  & --- & --- & DET \\
-        cerca  & NOUN & --- & --- & ADV \\
-        muy    & ADV  & --- & --- & ADV \\
-        cerca  & ADV  & --- & --- & ADV \\
-        para   & ADP  & --- & --- & ADP \\
-        que    & CONJ & --- & --- & SCONJ \\
-        nadie  & PRON & --- & --- & PRON \\
-        cerca  & VERB & --- & --- & ADV \\
-        el     & DET  & --- & --- & DET \\
-        jardín & NOUN & --- & --- & NOUN \\
+        Él     & PRON & --- & PRON  & PRON \\
+        puso   & VERB & --- & VERB  & VERB \\
+        la     & DET  & --- & DET   & DET \\
+        cerca  & NOUN & --- & ADV   & ADV \\
+        muy    & ADV  & --- & ADV   & ADV \\
+        cerca  & ADV  & --- & ADV   & ADV \\
+        para   & ADP  & --- & ADP   & ADP \\
+        que    & CONJ & --- & SCONJ & SCONJ \\
+        nadie  & PRON & --- & PRON  & PRON \\
+        cerca  & VERB & --- & ADV   & ADV \\
+        el     & DET  & --- & DET   & DET \\
+        jardín & NOUN & --- & NOUN  & NOUN \\
         \bottomrule
     \end{tabular}
 \end{table}
