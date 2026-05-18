@@ -242,8 +242,6 @@ vocabulario se construye contando frecuencias y filtrando palabras con menos de
 \texttt{MIN\_FREQ = 3} apariciones; las palabras fuera de vocabulario se mapean al
 token especial \texttt{<UNK>}.
 
-\end{lstlisting}
-
 \subsection{Vectorización y Padding}
 
 Las secuencias de palabras y etiquetas se convierten a matrices numéricas
@@ -341,11 +339,11 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
         \textbf{Modelo}  & \textbf{Dataset}  & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Weighted F1} \\
         \midrule
         BiLSTM           & Ancora            & 0.96               & 0.92                & 0.96              \\
-        BiLSTM-Deep      & Ancora            & ---               & ---                & ---               \\
+        BiLSTM-Deep      & Ancora            & 0.97               & 0.92                & 0.97               \\
         BiLSTM-CRF       & Ancora            & 0.97               & 0.93                & 0.97              \\
         \midrule
         BiLSTM           & CoNLL2002         & 0.94               & 0.91               & 0.94               \\
-        BiLSTM-Deep      & CoNLL2002         & ---               & ---                & ---               \\
+        BiLSTM-Deep      & CoNLL2002         & 0.95               & 0.91                & 0.95               \\
         BiLSTM-CRF       & CoNLL2002         & 0.95              & 0.91                & 0.95               \\
         \bottomrule
     \end{tabular}
@@ -360,6 +358,7 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
 \input{tables/BiLSTM_ancora.tex}
 
 \subsubsection{BiLSTM-Deep — Ancora}
+\input{tables/BiLSTM-Deep_ancora.tex}
 
 \subsubsection{BiLSTM-CRF — Ancora}
 \input{tables/BiLSTM+CRF(Ancora).tex}
@@ -368,6 +367,7 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
 \input{tables/BiLSTM_conll.tex}
 
 \subsubsection{BiLSTM-Deep — CoNLL2002}
+\input{tables/BiLSTM-Deep_conll.tex}
 
 \subsubsection{BiLSTM-CRF — CoNLL2002}
 \input{tables/BiLSTM+CRF(CoNLL).tex}
@@ -381,6 +381,7 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
 \subsection{Impacto de las Capas Profundas (BiLSTM-Deep)}
 
 % ── Discute aquí si agregar capas densas intermedias mejoró el desempeño ─────
+La variante BiLSTM-Deep obtuvo un desempeño competitivo frente al modelo base. En Ancora alcanzó una exactitud de 0.97, con Macro F1 de 0.92 y Weighted F1 de 0.97, lo que indica una mejora leve en la exactitud global y un comportamiento similar en las clases menos frecuentes. En CoNLL2002 obtuvo una exactitud de 0.95, Macro F1 de 0.91 y Weighted F1 de 0.95, superando ligeramente al BiLSTM base en exactitud y promedio ponderado. Estos resultados sugieren que añadir profundidad ayuda a capturar patrones contextuales adicionales, aunque el beneficio es moderado y depende del corpus.
 
 \subsection{Impacto del CRF en Etiquetas Secuenciales}
 
@@ -428,7 +429,7 @@ para cualquier etiquetador.
         \midrule
         \textbf{Gold}    & DET & NOUN   & ADJ  & VERB & DET & NOUN & ADP  & DET & NOUN     \\
         \textbf{BiLSTM}  & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
-        \textbf{B-Deep}  & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
+        \textbf{B-Deep}  & DET & NOUN   & ADJ  & VERB & DET & NOUN & ADP & DET & NOUN     \\
         \textbf{B-CRF}   & DET & NOUN    & ADJ  & VERB  & DET & ADP  & ADP  & DET & NOUN      \\
         \bottomrule
     \end{tabular}
