@@ -219,11 +219,11 @@ Se utilizan dos corpus en español:
         \toprule
         \textbf{Métrica}       & \textbf{Ancora} & \textbf{CoNLL2002 Train} \\
         \midrule
-        Total de tokens        & ---             & ---                      \\
-        Total de oraciones     & ---             & ---                      \\
-        Tags únicos            & ---             & ---                      \\
-        Longitud media (tokens)& ---             & ---                      \\
-        P95 longitud           & ---             & ---                      \\
+        Total de tokens        & 547.121             & 264.175                      \\
+        Total de oraciones     & 17.345             & 8.323                     \\
+        Tags únicos            & 16             & 59                      \\
+        Longitud media (tokens)& 31.5             & 31.8                      \\
+        P95 longitud           & 61             & 62                      \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -311,6 +311,34 @@ que monitorea la pérdida de validación y detiene el entrenamiento si no mejora
 durante 5 épocas consecutivas, restaurando siempre los pesos del mejor modelo
 observado.
 
+\subsection{Resultados de la Búsqueda de Hiperparámetros}
+
+Como resultado de la estrategia de búsqueda exhaustiva (\textit{Grid Search}) sobre el espacio de hiperparámetros definido, se identificaron las configuraciones óptimas para cada arquitectura y conjunto de datos. La selección del mejor modelo en cada experimento se realizó tomando como criterio principal la minimización de la pérdida de validación (\textit{Val Loss}) antes de la activación de la parada temprana (\textit{Early Stopping}).
+
+En el Cuadro \ref{tab:best_hyperparams} se resumen las configuraciones que arrojaron el mejor desempeño. Es notable destacar la predominancia del optimizador Adam y una dimensión de \textit{embedding} de 300 como parámetros recurrentes para alcanzar la convergencia óptima en la mayoría de los escenarios.
+
+\begin{table}[H]
+    \centering
+    \caption{Mejores configuraciones de hiperparámetros encontradas mediante Grid Search.}
+    \label{tab:best_hyperparams}
+    % Este comando ajusta la tabla al ancho del texto
+    \resizebox{\textwidth}{!}{%
+    \begin{tabular}{llccccr}
+        \toprule
+        \textbf{Modelo} & \textbf{Dataset} & \textbf{Batch Size} & \textbf{Emb Dim} & \textbf{Hidden Dim} & \textbf{Optimizador} & \textbf{Val Loss} \\
+        \midrule
+        BiLSTM        & Ancora    & 16 & 300 & 128 & Adam & 0.1135 \\
+        BiLSTM-Deep   & Ancora    & 16 & 300 & 256 & Adam & 0.1103 \\
+        BiLSTM-CRF    & Ancora    & 16 & 300 & 256 & SGD  & 3.0183 \\
+        \midrule
+        BiLSTM        & CoNLL2002 & 64 & 300 & 128 & Adam & 0.2153 \\
+        BiLSTM-Deep   & CoNLL2002 & 32 & 300 & 128 & Adam & 0.2172 \\ % Llenar cuando termine
+        BiLSTM-CRF    & CoNLL2002 & 16 & 300 & 128 & Adam & 5.3123 \\
+        \bottomrule
+    \end{tabular}%
+    }
+\end{table}
+
 % =============================================================================
 \section{Evaluación y Resultados}
 % =============================================================================
@@ -339,7 +367,7 @@ el conjunto de prueba, calculadas con \texttt{sklearn.metrics.classification\_re
         \textbf{Modelo}  & \textbf{Dataset}  & \textbf{Accuracy} & \textbf{Macro F1} & \textbf{Weighted F1} \\
         \midrule
         BiLSTM           & Ancora            & 0.96               & 0.92                & 0.96              \\
-        BiLSTM-Deep      & Ancora            & 0.97               & 0.92                & 0.97               \\
+        BiLSTM-Deep      & Ancora            & 0.97               & 0.93                & 0.97               \\
         BiLSTM-CRF       & Ancora            & 0.97               & 0.93                & 0.97              \\
         \midrule
         BiLSTM           & CoNLL2002         & 0.94               & 0.91               & 0.94               \\
@@ -398,6 +426,13 @@ En general, los resultados confirman que la combinación BiLSTM+CRF ofrece una m
 
 % ── Discute las diferencias de desempeño atribuibles a los corpus ─────────────
 
+Al analizar los resultados obtenidos en ambos conjuntos de datos, se evidencia una diferencia notable en el desempeño global de las arquitecturas, la cual se explica principalmente por dos factores: el volumen de información y la granularidad del esquema de anotación.
+
+Por un lado, el corpus \textbf{Ancora} emplea un conjunto de Etiquetas Universales (\textit{Universal POS Tags}) compuesto por solo 16 categorías macro (e.g., \texttt{NOUN}, \texttt{VERB}, \texttt{ADJ}). Al contar con un menor número de clases a predecir y un mayor volumen de datos de entrenamiento (más de 540,000 tokens), el problema de clasificación se simplifica significativamente. Esto explica por qué todos los modelos evaluados en Ancora logran alcanzar exactitudes globales superiores al 96\% y un Macro F1 muy estable.
+
+Por otro lado, el corpus \textbf{CoNLL2002} presenta un reto computacional y lingüístico mucho mayor al utilizar un formato derivado del conjunto de etiquetas PAROLE, el cual posee 59 clases distintas. Esta alta granularidad exige que los modelos no solo identifiquen la función gramatical base de una palabra, sino también sus accidentes morfológicos detallados (por ejemplo, diferenciar entre un verbo principal en indicativo \texttt{VMI} y uno en infinitivo \texttt{VMN}). A pesar de contar con menos de la mitad de los tokens de entrenamiento que Ancora (aproximadamente 264,000) y enfrentarse a una varianza de clases mucho mayor, los modelos mantuvieron una gran robustez con exactitudes cercanas al 95\%. La leve caída en las métricas de Macro F1 respecto a Ancora refleja la dificultad intrínseca del etiquetador para clasificar correctamente aquellas etiquetas morfológicas minoritarias o altamente específicas.
+
+
 % =============================================================================
 \section{Función de Inferencia y Pruebas con Oraciones Complejas}
 % =============================================================================
@@ -428,7 +463,7 @@ para cualquier etiquetador.
         \textbf{Token}   & El  & hombre & bajo & toca & el  & bajo & bajo & la  & escalera \\
         \midrule
         \textbf{Gold}    & DET & NOUN   & ADJ  & VERB & DET & NOUN & ADP  & DET & NOUN     \\
-        \textbf{BiLSTM}  & --- & ---    & ---  & ---  & --- & ---  & ---  & --- & ---      \\
+        \textbf{BiLSTM}  & DET & NOUN    & ADP  & VERB  & DET & NOUN  & ADP  & DET & NOUN      \\
         \textbf{B-Deep}  & DET & NOUN   & ADJ  & VERB & DET & NOUN & ADP & DET & NOUN     \\
         \textbf{B-CRF}   & DET & NOUN    & ADJ  & VERB  & DET & ADP  & ADP  & DET & NOUN      \\
         \bottomrule
@@ -447,19 +482,19 @@ En esta frase, la palabra sobre aparece con dos funciones: como un objeto (susta
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Por    & ADP  & --- & ADP  & ADP \\
-        favor  & NOUN & --- & NOUN & NOUN \\
-        deja   & VERB & --- & VERB & VERB\\
-        el     & DET  & --- & DET  & DET \\
-        sobre  & NOUN & --- & NOUN & ADP \\
-        con    & ADP  & --- & ADP  & ADP \\
-        la     & DET  & --- & DET  & DET \\
-        carta  & NOUN & --- & NOUN & NOUN \\
-        sobre  & ADP  & --- & ADP  & ADP \\
-        la     & DET  & --- & DET  & DET \\
-        mesa   & NOUN & --- & NOUN & NOUN \\
-        de     & ADP  & --- & ADP  & ADP \\
-        madera & NOUN & --- & NOUN & NOUN \\
+        Por    & ADP  & ADP & ADP  & ADP \\
+        favor  & NOUN & NOUN & NOUN & NOUN \\
+        deja   & VERB & VERB & VERB & VERB\\
+        el     & DET  & DET & DET  & DET \\
+        sobre  & NOUN & NOUN & NOUN & ADP \\
+        con    & ADP  & ADP & ADP  & ADP \\
+        la     & DET  & DET & DET  & DET \\
+        carta  & NOUN & NOUN & NOUN & NOUN \\
+        sobre  & ADP  & ADP & ADP  & ADP \\
+        la     & DET  & DET & DET  & DET \\
+        mesa   & NOUN & NOUN & NOUN & NOUN \\
+        de     & ADP  & ADP & ADP  & ADP \\
+        madera & NOUN & NOUN & NOUN & NOUN \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -479,16 +514,16 @@ Aquí el modelo debe diferenciar entre una acción (verbo traer) y una prenda de
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Yo         & PRON & --- & PRON & PRON \\
-        traje      & VERB & --- & VERB & VERB \\
-        un         & DET  & --- & DET  & DET \\
-        traje      & NOUN & --- & NOUN & NOUN \\
-        nuevo      & ADJ  & --- & ADJ  & ADJ \\
-        para       & ADP  & --- & ADP  & ADP \\
-        la         & DET  & --- & DET  & DET \\
-        ceremonia  & NOUN & --- & NOUN & NOUN \\
-        de         & ADP  & --- & ADP  & ADP \\
-        graduación & NOUN & --- & NOUN & PROPN \\
+        Yo         & PRON & PRON & PRON & PRON \\
+        traje      & VERB & VERB & VERB & VERB \\
+        un         & DET  & DET & DET  & DET \\
+        traje      & NOUN & NOUN & NOUN & NOUN \\
+        nuevo      & ADJ  & ADJ & ADJ  & ADJ \\
+        para       & ADP  & ADP & ADP  & ADP \\
+        la         & DET  & DET & DET  & DET \\
+        ceremonia  & NOUN & NOUN & NOUN & NOUN \\
+        de         & ADP  & ADP & ADP  & ADP \\
+        graduación & NOUN & NOUN & NOUN & PROPN \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -505,17 +540,17 @@ Esta oración usa la palabra calle de dos formas: como el verbo callar y como el
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Espero    & VERB & --- & VERB  & VERB \\
-        que       & CONJ & --- & SCONJ & SCONJ \\
-        el        & DET  & --- & DET   & DET \\
-        hombre    & NOUN & --- & NOUN  & NOUN \\
-        calle     & VERB & --- & ADJ   & VERB \\
-        mientras  & ADV  & --- & SCONJ & SCONJ \\
-        camina    & VERB & --- & VERB  & VERB \\
-        por       & ADP  & --- & ADP   & ADP \\
-        la        & DET  & --- & DET   & DET \\
-        calle     & NOUN & --- & NOUN  & NOUN \\
-        principal & ADJ  & --- & ADJ   & ADJ \\
+        Espero    & VERB & VERB & VERB  & VERB \\
+        que       & CONJ & SCONJ & SCONJ & SCONJ \\
+        el        & DET  & DET & DET   & DET \\
+        hombre    & NOUN & NOUN & NOUN  & NOUN \\
+        calle     & VERB & VERB & ADJ   & VERB \\
+        mientras  & ADV  & SCONJ & SCONJ & SCONJ \\
+        camina    & VERB & VERB & VERB  & VERB \\
+        por       & ADP  & ADP & ADP   & ADP \\
+        la        & DET  & DET & DET   & DET \\
+        calle     & NOUN & NOUN & NOUN  & NOUN \\
+        principal & ADJ  & ADJ & ADJ   & ADJ \\
         \bottomrule
     \end{tabular}
 \end{table}
@@ -533,36 +568,29 @@ Es la oración más difícil porque usa la misma palabra para tres cosas: un obj
         \toprule
         \textbf{Token} & \textbf{Gold} & \textbf{BiLSTM} & \textbf{B-Deep} & \textbf{B-CRF} \\
         \midrule
-        Él     & PRON & --- & PRON  & PRON \\
-        puso   & VERB & --- & VERB  & VERB \\
-        la     & DET  & --- & DET   & DET \\
-        cerca  & NOUN & --- & ADV   & ADV \\
-        muy    & ADV  & --- & ADV   & ADV \\
-        cerca  & ADV  & --- & ADV   & ADV \\
-        para   & ADP  & --- & ADP   & ADP \\
-        que    & CONJ & --- & SCONJ & SCONJ \\
-        nadie  & PRON & --- & PRON  & PRON \\
-        cerca  & VERB & --- & ADV   & ADV \\
-        el     & DET  & --- & DET   & DET \\
-        jardín & NOUN & --- & NOUN  & NOUN \\
+        Él     & PRON & PRON & PRON  & PRON \\
+        puso   & VERB & VERB & VERB  & VERB \\
+        la     & DET  & DET & DET   & DET \\
+        cerca  & NOUN & ADV & ADV   & ADV \\
+        muy    & ADV  & ADV & ADV   & ADV \\
+        cerca  & ADV  & ADV & ADV   & ADV \\
+        para   & ADP  & ADP & ADP   & ADP \\
+        que    & CONJ & SCONJ & SCONJ & SCONJ \\
+        nadie  & PRON & PRON & PRON  & PRON \\
+        cerca  & VERB & VERB & ADV   & ADV \\
+        el     & DET  & DET & DET   & DET \\
+        jardín & NOUN & NOUN & NOUN  & NOUN \\
         \bottomrule
     \end{tabular}
 \end{table}
-% =============================================================================
-\section{Conclusiones}
-% =============================================================================
-
-% ── Sintetiza los principales hallazgos del taller ────────────────────────────
-
-En este taller se implementaron y compararon tres arquitecturas de aprendizaje
-profundo para POS Tagging en español. A partir de los resultados obtenidos
-pueden extraerse las siguientes conclusiones:
-
 \begin{enumerate}
-    \item \textbf{[Conclusión sobre BiLSTM base]:} ...
-    \item \textbf{[Impacto de la profundidad]:} ...
-    \item \textbf{[Impacto del CRF]:} El uso de CRF mejoró el modelado de dependencias entre etiquetas consecutivas, generando secuencias más coherentes y reduciendo errores en transiciones poco probables. Sin embargo, su impacto es limitado en casos de ambigüedad léxica, donde la correcta predicción depende más del significado contextual que de las relaciones entre etiquetas.
-    \item \textbf{[Diferencias entre corpus]:} ...
+    \item \textbf{Conclusión sobre BiLSTM base:} La arquitectura BiLSTM base demostró ser un modelo robusto y altamente efectivo, estableciendo un excelente punto de referencia al capturar eficazmente el contexto bidireccional de cada palabra. No obstante, al predecir la probabilidad de cada token de manera aislada en la capa de salida, presenta debilidades estructurales y puede generar secuencias gramaticalmente inválidas (como predecir dos verbos principales de forma consecutiva).
+
+    \item \textbf{Impacto de la profundidad (BiLSTM-Deep):} La adición de capas densas intermedias con activaciones no lineales incrementó la capacidad de representación abstracta de la red. Si bien esto permitió capturar patrones ligeramente más complejos, las mejoras en métricas globales como el \textit{Accuracy} y el F1-Score fueron marginales. Esto sugiere que, para la tarea específica de \textit{POS Tagging}, el contexto secuencial extraído por una sola capa recurrente bidireccional ya logra extraer la mayor parte de la información gramatical necesaria.
+
+    \item \textbf{Impacto del CRF:} El uso de CRF mejoró el modelado de dependencias entre etiquetas consecutivas, generando secuencias más coherentes y reduciendo errores en transiciones poco probables. Sin embargo, su impacto es limitado en casos de ambigüedad léxica, donde la correcta predicción depende más del significado contextual que de las relaciones entre etiquetas.
+
+    \item \textbf{Diferencias entre corpus (Ancora vs.\ CoNLL2002):} El desempeño métrico está fuertemente condicionado por la granularidad del esquema de anotación. El corpus Ancora, al utilizar 16 Etiquetas Universales, simplifica el problema de clasificación y permite alcanzar exactitudes globales superiores al 96\%. En contraste, CoNLL2002 representa un reto mayor debido a sus 59 etiquetas morfológicas (formato PAROLE); aunque sus métricas son levemente inferiores debido a la dispersión de clases, los modelos resultantes capturan información lingüística mucho más rica y profunda del español.
 \end{enumerate}
 
 % =============================================================================
